@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.tsbuildinfo
+npm-debug.log*
+
+# Brouillons internes : ne doivent jamais atteindre le repo public.
+# Les originaux vivent dans integrations/_internal/.
+LISTING.md
+*-LISTING.md
