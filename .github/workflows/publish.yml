@@ -1,0 +1,51 @@
+# Publication de n8n-nodes-outsend sur npm.
+#
+# n8n EXIGE, pour tout node soumis a la verification depuis le 1er mai 2026,
+# que le paquet soit publie depuis une GitHub Action AVEC une declaration de
+# provenance. Une publication faite depuis une machine locale est refusee.
+#
+# La provenance est signee via OIDC : c'est `permissions: id-token: write` qui
+# l'autorise, et npm >= 9.5 (fourni par setup-node) qui l'emet.
+#
+# Secret requis : NPM_TOKEN = jeton npm "Granular Access" limite au seul
+# paquet n8n-nodes-outsend, en ecriture. Une fois le paquet publie une
+# premiere fois, on peut basculer sur npm Trusted Publishers et SUPPRIMER
+# le secret : plus aucun jeton longue duree ne traine alors sur GitHub.
+
+name: Publish to npm
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Les memes controles que ceux exiges par la verification n8n :
+      # un paquet qui ne lint pas ne doit jamais atteindre le registre.
+      - name: Lint (n8n community node rules)
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish with provenance
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

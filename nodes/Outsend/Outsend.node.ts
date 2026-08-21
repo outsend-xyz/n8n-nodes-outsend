@@ -5,7 +5,7 @@ export class Outsend implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Outsend',
 		name: 'outsend',
-		icon: 'file:outsend.svg',
+		icon: { light: 'file:outsend.svg', dark: 'file:outsend.dark.svg' },
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
@@ -50,7 +50,7 @@ export class Outsend implements INodeType {
 						description: 'Multi-step no-code pipelines (scrape → enrich → filter → …)',
 					},
 					{
-						name: 'Veille',
+						name: 'Monitor',
 						value: 'veille',
 						description: 'Recurring monitoring of a completed job or pipeline',
 					},
@@ -222,9 +222,9 @@ export class Outsend implements INodeType {
 					{
 						name: 'Create',
 						value: 'create',
-						action: 'Create a veille',
+						action: 'Create a monitor',
 						description:
-							'Create a recurring monitoring (veille) on a completed job or pipeline',
+							'Create a recurring monitor on a completed job or pipeline',
 						routing: {
 							request: {
 								method: 'POST',
@@ -235,8 +235,8 @@ export class Outsend implements INodeType {
 					{
 						name: 'Delete',
 						value: 'delete',
-						action: 'Delete a veille',
-						description: 'Soft-delete a veille (its run history is kept)',
+						action: 'Delete a monitor',
+						description: 'Soft-delete a monitor (its run history is kept)',
 						routing: {
 							request: {
 								method: 'DELETE',
@@ -247,8 +247,8 @@ export class Outsend implements INodeType {
 					{
 						name: 'Get Many',
 						value: 'getAll',
-						action: 'Get many veilles',
-						description: 'List active and paused veilles of the authenticated account',
+						action: 'Get many monitors',
+						description: 'List active and paused monitors of the authenticated account',
 						routing: {
 							request: {
 								method: 'GET',
@@ -488,8 +488,8 @@ export class Outsend implements INodeType {
 				name: 'items',
 				type: 'json',
 				default: '',
-				description:
-					'Optional JSON array of rows to enrich (max 10,000), typically a subset of the source job rows (from GET /api/jobs/{id}/items). Leave empty to let the API resolve the rows from the source job.',
+				// eslint-disable-next-line n8n-nodes-base/node-param-description-miscased-id -- `{id}` est le placeholder litteral du chemin d'API, pas de la prose.
+				description: 'Optional JSON array of rows to enrich (max 10,000), typically a subset of the source job rows (from GET /api/jobs/{id}/items). Leave empty to let the API resolve the rows from the source job.',
 				displayOptions: {
 					show: {
 						resource: ['job'],
@@ -619,8 +619,8 @@ export class Outsend implements INodeType {
 				type: 'json',
 				required: true,
 				default: '{\n  "nodes": [],\n  "edges": []\n}',
-				description:
-					'Pipeline definition: {"nodes": [{"id", "type", "config"}], "edges": [{"from", "to"}]}. Node types and their config schema are documented by GET https://outsend.xyz/api/pipelines/schema (public, no auth).',
+				// eslint-disable-next-line n8n-nodes-base/node-param-description-miscased-id -- `id` est un nom de cle JSON litteral de l'API, le renommer casserait l'exemple.
+				description: 'Pipeline definition: {"nodes": [{"id", "type", "config"}], "edges": [{"from", "to"}]}. Node types and their config schema are documented by GET https://outsend.xyz/api/pipelines/schema (public, no auth).',
 				displayOptions: {
 					show: {
 						resource: ['pipeline'],
@@ -659,7 +659,7 @@ export class Outsend implements INodeType {
 				type: 'string',
 				required: true,
 				default: '',
-				description: 'Name of the veille (2 to 200 characters)',
+				description: 'Name of the monitor (2 to 200 characters)',
 				displayOptions: {
 					show: {
 						resource: ['veille'],
@@ -682,7 +682,7 @@ export class Outsend implements INodeType {
 					{ name: 'Pipeline', value: 'pipeline' },
 				],
 				default: 'job',
-				description: 'Whether the veille re-runs a completed job or a completed pipeline',
+				description: 'Whether the monitor re-runs a completed job or a completed pipeline',
 				displayOptions: {
 					show: {
 						resource: ['veille'],
@@ -757,12 +757,12 @@ export class Outsend implements INodeType {
 				},
 			},
 			{
-				displayName: 'Veille ID',
+				displayName: 'Monitor ID',
 				name: 'veilleId',
 				type: 'string',
 				required: true,
 				default: '',
-				description: 'Numeric ID of the veille to delete',
+				description: 'Numeric ID of the monitor to delete',
 				displayOptions: {
 					show: {
 						resource: ['veille'],
@@ -771,5 +771,6 @@ export class Outsend implements INodeType {
 				},
 			},
 		],
+		usableAsTool: true,
 	};
 }

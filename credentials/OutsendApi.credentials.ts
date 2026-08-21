@@ -2,6 +2,7 @@ import type {
 	IAuthenticateGeneric,
 	ICredentialTestRequest,
 	ICredentialType,
+	Icon,
 	INodeProperties,
 } from 'n8n-workflow';
 
@@ -9,6 +10,8 @@ export class OutsendApi implements ICredentialType {
 	name = 'outsendApi';
 
 	displayName = 'Outsend API';
+
+	icon: Icon = { light: 'file:outsend.svg', dark: 'file:outsend.dark.svg' };
 
 	documentationUrl = 'https://outsend.xyz/docs';
 

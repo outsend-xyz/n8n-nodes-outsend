@@ -70,12 +70,12 @@ export class OutsendTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Outsend Trigger',
 		name: 'outsendTrigger',
-		icon: 'file:outsend.svg',
+		icon: { light: 'file:outsend.svg', dark: 'file:outsend.dark.svg' },
 		group: ['trigger'],
 		version: 1,
 		subtitle: '={{$parameter["events"].join(", ")}}',
 		description:
-			'Starts the workflow when Outsend sends an event (job, pipeline or veille completion)',
+			'Starts the workflow when Outsend sends an event (job, pipeline or monitor completion)',
 		defaults: {
 			name: 'Outsend Trigger',
 		},
@@ -120,6 +120,11 @@ export class OutsendTrigger implements INodeType {
 						description: 'A job failed',
 					},
 					{
+						name: 'Monitor Run Completed',
+						value: 'veille.run_completed',
+						description: 'A monitor run finished and its diff is available',
+					},
+					{
 						name: 'Pipeline Cancelled',
 						value: 'pipeline.cancelled',
 						description: 'A pipeline was cancelled',
@@ -133,11 +138,6 @@ export class OutsendTrigger implements INodeType {
 						name: 'Pipeline Failed',
 						value: 'pipeline.failed',
 						description: 'A pipeline failed',
-					},
-					{
-						name: 'Veille Run Completed',
-						value: 'veille.run_completed',
-						description: 'A monitoring (veille) run finished and its diff is available',
 					},
 				],
 			},
@@ -219,8 +219,15 @@ export class OutsendTrigger implements INodeType {
 						method: 'DELETE',
 						url: `${OUTSEND_BASE_URL}/api/webhooks/${existing.id}`,
 					});
-				} catch {
+				} catch (error) {
 					// Already gone, or gone in the meantime — create() will handle it.
+					// Non-fatal, but surfaced: a persistent failure here would mean we
+					// are leaking endpoints on the Outsend side.
+					this.logger.warn(
+						`Outsend Trigger: could not delete stale webhook ${existing.id}: ${
+							(error as Error).message
+						}`,
+					);
 				}
 				delete webhookData.webhookId;
 				delete webhookData.secret;
@@ -272,12 +279,17 @@ export class OutsendTrigger implements INodeType {
 							method: 'DELETE',
 							url: `${OUTSEND_BASE_URL}/api/webhooks/${webhookData.webhookId}`,
 						});
-					} catch {
+					} catch (error) {
 						// The endpoint may already be gone (deleted from the Outsend
 						// UI, or by a previous half-finished deactivation). We still
 						// clear the local ids: keeping them would make the next
 						// activation believe it owns a remote endpoint that does not
 						// exist, and skip creating one.
+						this.logger.warn(
+							`Outsend Trigger: could not delete webhook ${webhookData.webhookId}: ${
+								(error as Error).message
+							}`,
+						);
 					}
 					delete webhookData.webhookId;
 					delete webhookData.secret;

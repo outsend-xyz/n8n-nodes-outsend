@@ -45,9 +45,9 @@ Actions against the Outsend API (`https://outsend.xyz`).
 | Pipeline | Create | Create and start a pipeline from a JSON definition (`POST /api/pipelines`) |
 | Pipeline | Get | Fetch a pipeline with per-node jobs, progress and final output job |
 | Pipeline | Get Many | List your pipelines |
-| Veille | Create | Create a recurring monitoring on a completed job or pipeline (frequency in days) |
-| Veille | Get Many | List your active and paused veilles |
-| Veille | Delete | Soft-delete a veille |
+| Monitor | Create | Create a recurring monitor on a completed job or pipeline (frequency in days) |
+| Monitor | Get Many | List your active and paused monitors |
+| Monitor | Delete | Soft-delete a monitor |
 
 Tips:
 
