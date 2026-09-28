@@ -488,8 +488,7 @@ export class Outsend implements INodeType {
 				name: 'items',
 				type: 'json',
 				default: '',
-				// eslint-disable-next-line n8n-nodes-base/node-param-description-miscased-id -- `{id}` est le placeholder litteral du chemin d'API, pas de la prose.
-				description: 'Optional JSON array of rows to enrich (max 10,000), typically a subset of the source job rows (from GET /api/jobs/{id}/items). Leave empty to let the API resolve the rows from the source job.',
+				description: 'Optional JSON array of rows to enrich (max 10,000), typically a subset of the source job rows as returned by the job items endpoint. Leave empty to let the API resolve the rows from the source job.',
 				displayOptions: {
 					show: {
 						resource: ['job'],
@@ -619,8 +618,7 @@ export class Outsend implements INodeType {
 				type: 'json',
 				required: true,
 				default: '{\n  "nodes": [],\n  "edges": []\n}',
-				// eslint-disable-next-line n8n-nodes-base/node-param-description-miscased-id -- `id` est un nom de cle JSON litteral de l'API, le renommer casserait l'exemple.
-				description: 'Pipeline definition: {"nodes": [{"id", "type", "config"}], "edges": [{"from", "to"}]}. Node types and their config schema are documented by GET https://outsend.xyz/api/pipelines/schema (public, no auth).',
+				description: 'Pipeline definition: an object with "nodes" (each with its identifier, "type" and "config") and "edges" (each with "from" and "to"). Node types and their config schema are documented by GET https://outsend.xyz/api/pipelines/schema (public, no auth).',
 				displayOptions: {
 					show: {
 						resource: ['pipeline'],
