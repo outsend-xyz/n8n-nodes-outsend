@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-outsend",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "n8n community nodes for Outsend (outsend.xyz): Google Maps scraping, lead enrichment (emails, reviews, socials, email verification), no-code pipelines, monitoring and event triggers",
   "keywords": [
     "n8n-community-node-package",
