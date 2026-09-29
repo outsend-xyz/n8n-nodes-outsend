@@ -4,13 +4,11 @@
 # que le paquet soit publie depuis une GitHub Action AVEC une declaration de
 # provenance. Une publication faite depuis une machine locale est refusee.
 #
-# La provenance est signee via OIDC : c'est `permissions: id-token: write` qui
-# l'autorise, et npm >= 9.5 (fourni par setup-node) qui l'emet.
-#
-# Secret requis : NPM_TOKEN = jeton npm "Granular Access" limite au seul
-# paquet n8n-nodes-outsend, en ecriture. Une fois le paquet publie une
-# premiere fois, on peut basculer sur npm Trusted Publishers et SUPPRIMER
-# le secret : plus aucun jeton longue duree ne traine alors sur GitHub.
+# Authentification par npm Trusted Publishers (OIDC) : npmjs.com fait
+# confiance a CE workflow (outsend-xyz/n8n-nodes-outsend, publish.yml).
+# Aucun jeton npm n'est stocke sur GitHub. `id-token: write` autorise a la
+# fois l'echange OIDC et la signature de la provenance, et il faut npm >= 11.5.1
+# (Node 22 embarque npm 10, d'ou la mise a jour avant la publication).
 
 name: Publish to npm
 
@@ -45,7 +43,8 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Upgrade npm (Trusted Publishers needs >= 11.5.1)
+        run: npm install -g npm@latest
+
       - name: Publish with provenance
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
