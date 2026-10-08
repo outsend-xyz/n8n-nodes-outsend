@@ -460,49 +460,56 @@ export class Outsend implements INodeType {
 				},
 			},
 			{
-				displayName: 'Email Mode',
-				name: 'emailMode',
-				type: 'options',
+				displayName: 'Additional Fields',
+				name: 'additionalFields',
+				type: 'collection',
+				placeholder: 'Add Field',
+				default: {},
+				displayOptions: {
+					show: {
+						resource: ['job'],
+						operation: ['createEnrichment'],
+					},
+				},
 				options: [
-					{ name: 'Normal', value: 'normal' },
-					{ name: 'Deep', value: 'deep' },
+					{
+						displayName: 'Email Mode',
+						name: 'emailMode',
+						type: 'options',
+						options: [
+							{ name: 'Normal', value: 'normal' },
+							{ name: 'Deep', value: 'deep' },
+						],
+						default: 'normal',
+						description: 'Depth of the email discovery crawl',
+						displayOptions: {
+							show: {
+								'/enrichmentType': ['emails'],
+							},
+						},
+						routing: {
+							send: {
+								type: 'body',
+								property: 'mode',
+							},
+						},
+					},
+					{
+						displayName: 'Items (JSON)',
+						name: 'items',
+						type: 'json',
+						default: '',
+						description: 'JSON array of rows to enrich (max 10,000), typically a subset of the source job rows as returned by the job items endpoint. When not set, the API resolves the rows from the source job.',
+						routing: {
+							send: {
+								type: 'body',
+								property: 'items',
+								value:
+									'={{ $value ? (typeof $value === "string" ? JSON.parse($value) : $value) : undefined }}',
+							},
+						},
+					},
 				],
-				default: 'normal',
-				description: 'Depth of the email discovery crawl',
-				displayOptions: {
-					show: {
-						resource: ['job'],
-						operation: ['createEnrichment'],
-						enrichmentType: ['emails'],
-					},
-				},
-				routing: {
-					send: {
-						type: 'body',
-						property: 'mode',
-					},
-				},
-			},
-			{
-				displayName: 'Items (JSON)',
-				name: 'items',
-				type: 'json',
-				default: '',
-				description: 'Optional JSON array of rows to enrich (max 10,000), typically a subset of the source job rows as returned by the job items endpoint. Leave empty to let the API resolve the rows from the source job.',
-				displayOptions: {
-					show: {
-						resource: ['job'],
-						operation: ['createEnrichment'],
-					},
-				},
-				routing: {
-					send: {
-						type: 'body',
-						property: 'items',
-						value:
-							'={{ $value ? (typeof $value === "string" ? JSON.parse($value) : $value) : undefined }}',
-					},
-				},
 			},
 
 			// ----------------------------------------------------------------
@@ -545,12 +552,44 @@ export class Outsend implements INodeType {
 			//                     Job fields — Get Many
 			// ----------------------------------------------------------------
 			{
+				displayName: 'Return All',
+				name: 'returnAll',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to return all results or only up to a given limit',
+				displayOptions: {
+					show: {
+						resource: ['job'],
+						operation: ['getAll'],
+					},
+				},
+				routing: {
+					// The node always walks the pages itself (limit/offset query parameters,
+					// GET /api/jobs returns a bare JSON array). With Return All it stops on the
+					// first short page; otherwise it stops once `Limit` results are collected
+					// (output.maxResults below), so a Limit above the API page cap still works.
+					send: {
+						paginate: true,
+					},
+					operations: {
+						pagination: {
+							type: 'offset',
+							properties: {
+								limitParameter: 'limit',
+								offsetParameter: 'offset',
+								pageSize: 100,
+								type: 'query',
+							},
+						},
+					},
+				},
+			},
+			{
 				displayName: 'Limit',
 				name: 'limit',
 				type: 'number',
 				typeOptions: {
 					minValue: 1,
-					maxValue: 500,
 				},
 				default: 50,
 				description: 'Max number of results to return',
@@ -558,34 +597,12 @@ export class Outsend implements INodeType {
 					show: {
 						resource: ['job'],
 						operation: ['getAll'],
+						returnAll: [false],
 					},
 				},
 				routing: {
-					send: {
-						type: 'query',
-						property: 'limit',
-					},
-				},
-			},
-			{
-				displayName: 'Offset',
-				name: 'offset',
-				type: 'number',
-				typeOptions: {
-					minValue: 0,
-				},
-				default: 0,
-				description: 'Number of results to skip (for pagination)',
-				displayOptions: {
-					show: {
-						resource: ['job'],
-						operation: ['getAll'],
-					},
-				},
-				routing: {
-					send: {
-						type: 'query',
-						property: 'offset',
+					output: {
+						maxResults: '={{ $value }}',
 					},
 				},
 			},
@@ -593,25 +610,6 @@ export class Outsend implements INodeType {
 			// ----------------------------------------------------------------
 			//                       Pipeline fields
 			// ----------------------------------------------------------------
-			{
-				displayName: 'Name',
-				name: 'pipelineName',
-				type: 'string',
-				default: 'Pipeline',
-				description: 'Name of the pipeline (max 120 characters)',
-				displayOptions: {
-					show: {
-						resource: ['pipeline'],
-						operation: ['create'],
-					},
-				},
-				routing: {
-					send: {
-						type: 'body',
-						property: 'name',
-					},
-				},
-			},
 			{
 				displayName: 'Definition (JSON)',
 				name: 'definition',
@@ -632,6 +630,34 @@ export class Outsend implements INodeType {
 						value: '={{ typeof $value === "string" ? JSON.parse($value) : $value }}',
 					},
 				},
+			},
+			{
+				displayName: 'Additional Fields',
+				name: 'additionalFields',
+				type: 'collection',
+				placeholder: 'Add Field',
+				default: {},
+				displayOptions: {
+					show: {
+						resource: ['pipeline'],
+						operation: ['create'],
+					},
+				},
+				options: [
+					{
+						displayName: 'Name',
+						name: 'pipelineName',
+						type: 'string',
+						default: 'Pipeline',
+						description: 'Name of the pipeline (max 120 characters)',
+						routing: {
+							send: {
+								type: 'body',
+								property: 'name',
+							},
+						},
+					},
+				],
 			},
 			{
 				displayName: 'Pipeline ID',

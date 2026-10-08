@@ -40,7 +40,7 @@ Actions against the Outsend API (`https://outsend.xyz`).
 | Job | Create Scrape Job | Start a Google Maps scrape (`POST /api/jobs`): comma-separated queries and zones, optional country (ISO3, default `FRA`), approximate stop threshold (`stop_at`), reviews, scrape mode |
 | Job | Create Enrichment Job | Enrich a previous job (`POST /api/jobs/{type}`): Emails (normal/deep), Reviews, Socials, Verify Emails — with source job ID and optional explicit items |
 | Job | Get | Fetch one job with live status and counters |
-| Job | Get Many | List your jobs (limit/offset pagination) |
+| Job | Get Many | List your jobs, most recent first: Return All (the node walks every page) or up to a Limit |
 | Job | Get Download URL | Return the export URL of a job (`/api/jobs/{id}/download?format=csv|json|xlsx`) plus its `download_available` flag |
 | Pipeline | Create | Create and start a pipeline from a JSON definition (`POST /api/pipelines`) |
 | Pipeline | Get | Fetch a pipeline with per-node jobs, progress and final output job |
