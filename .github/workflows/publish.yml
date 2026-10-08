@@ -9,6 +9,16 @@
 # Aucun jeton npm n'est stocke sur GitHub. `id-token: write` autorise a la
 # fois l'echange OIDC et la signature de la provenance, et il faut npm >= 11.5.1
 # (Node 22 embarque npm 10, d'ou la mise a jour avant la publication).
+#
+# Cote npmjs.com (Settings du paquet > Trusted publishing), deux regles npm :
+# - une configuration creee apres le 03/09/2026 n'autorise que `npm stage
+#   publish` : il faut cocher `npm publish` dans « Allowed actions » ;
+# - une configuration neuve doit reussir sa 1re publication sous 2 jours,
+#   sinon elle expire (ni utilisable ni modifiable) : la supprimer, la recreer,
+#   puis relancer ce workflow aussitot.
+# Si l'echange OIDC est refuse, npm retombe en silence sur le jeton factice
+# de setup-node et le registre repond E404 au PUT : la vraie raison n'est
+# ecrite que dans le journal de debug de npm, affiche par la derniere etape.
 
 name: Publish to npm
 
@@ -43,8 +53,16 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Majeure figee : npm@latest est passe seul de 11 a 12, et npm annonce que
+      # la cle `always-auth` ecrite par setup-node cassera a la majeure suivante.
       - name: Upgrade npm (Trusted Publishers needs >= 11.5.1)
-        run: npm install -g npm@latest
+        run: |
+          npm install -g npm@12
+          npm --version
 
       - name: Publish with provenance
         run: npm publish --provenance --access public
+
+      - name: Show npm OIDC diagnostics
+        if: failure()
+        run: grep -h -E 'oidc|http fetch' ~/.npm/_logs/*-debug-0.log || true
