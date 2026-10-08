@@ -5,10 +5,10 @@
 # provenance. Une publication faite depuis une machine locale est refusee.
 #
 # Authentification par npm Trusted Publishers (OIDC) : npmjs.com fait
-# confiance a CE workflow (outsend-xyz/n8n-nodes-outsend, publish.yml).
-# Aucun jeton npm n'est stocke sur GitHub. `id-token: write` autorise a la
-# fois l'echange OIDC et la signature de la provenance, et il faut npm >= 11.5.1
-# (Node 22 embarque npm 10, d'ou la mise a jour avant la publication).
+# confiance a CE workflow (outsend-xyz/n8n-nodes-outsend, publish.yml), avec
+# repli sur le secret NPM_TOKEN (voir l'etape de publication). `id-token: write`
+# autorise a la fois l'echange OIDC et la signature de la provenance, et il faut
+# npm >= 11.15.0 pour `npm stage` (Node 22 embarque npm 10, d'ou la mise a jour).
 #
 # Cote npmjs.com (Settings du paquet > Trusted publishing), deux regles npm :
 # - une configuration creee apres le 03/09/2026 n'autorise que `npm stage
@@ -16,8 +16,8 @@
 # - une configuration neuve doit reussir sa 1re publication sous 2 jours,
 #   sinon elle expire (ni utilisable ni modifiable) : la supprimer, la recreer,
 #   puis relancer ce workflow aussitot.
-# Si l'echange OIDC est refuse, npm retombe en silence sur le jeton factice
-# de setup-node et le registre repond E404 au PUT : la vraie raison n'est
+# Si l'echange OIDC est refuse, npm retombe en silence sur le jeton du .npmrc
+# (NPM_TOKEN, ou le jeton factice de setup-node) : la vraie raison n'est
 # ecrite que dans le journal de debug de npm, affiche par la derniere etape.
 
 name: Publish to npm
@@ -60,8 +60,51 @@ jobs:
           npm install -g npm@12
           npm --version
 
+      # Repli OIDC -> jeton (npm 12, lib/utils/oidc.js) : si l'echange echoue,
+      # oidc() rend la main sans toucher a la config et npm publie avec le jeton
+      # du .npmrc de setup-node, ${NODE_AUTH_TOKEN} = secret NPM_TOKEN. Cas du
+      # 08/10/2026 : depot cree le 14/08/2026, claim `sub` immuable que npm ne
+      # reconnait pas (npm/cli#9969), echange en 404 « package not found ».
+      # Secret absent : variable vide, sans effet quand l'OIDC passe.
+      # Jeton sans contournement du 2FA ou « stage only » : npm publish est
+      # refuse en CI (EOTP, E_STAGE_REQUIRED), d'ou `npm stage publish` ; la
+      # version attend alors l'approbation 2FA d'un mainteneur sur npmjs.com.
       - name: Publish with provenance
-        run: npm publish --provenance --access public
+        id: publish
+        shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if npm publish --provenance --access public; then
+            echo "mode=publish" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::npm publish refuse, nouvel essai avec npm stage publish"
+            npm stage publish --provenance --access public | tee "$RUNNER_TEMP/stage.out"
+            echo "mode=stage" >> "$GITHUB_OUTPUT"
+            echo "stage_id=$(grep -oE '[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}' "$RUNNER_TEMP/stage.out" | head -1)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check the version on npm
+        shell: bash
+        env:
+          MODE: ${{ steps.publish.outputs.mode }}
+          STAGE_ID: ${{ steps.publish.outputs.stage_id }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          for i in 1 2 3 4 5 6; do
+            V=$(npm view "n8n-nodes-outsend@$VERSION" version 2>/dev/null || true)
+            if [ "$V" = "$VERSION" ]; then echo "n8n-nodes-outsend@$V en ligne sur npm ($MODE)"; exit 0; fi
+            [ "$MODE" = stage ] && break
+            sleep 10
+          done
+          if [ "$MODE" = publish ]; then
+            echo "::warning::n8n-nodes-outsend@$VERSION publie mais pas encore visible (propagation du registre)"
+            exit 0
+          fi
+          echo "::warning::version en attente : promotion 2FA nécessaire sur npmjs.com"
+          echo "n8n-nodes-outsend@$VERSION : 404 sur npm, la version est en attente (stage ${STAGE_ID:-?})."
+          echo "Approuver avec le 2FA : npm stage approve ${STAGE_ID:-<stage-id>} --otp <code>"
+          echo "ou sur npmjs.com, onglet Staged Packages, bouton Approve."
 
       - name: Show npm OIDC diagnostics
         if: failure()
